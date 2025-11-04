@@ -1,0 +1,10 @@
+# This file is machine-generated - editing it directly is not advised
+
+julia_version = "1.12.1"
+manifest_format = "2.0"
+project_hash = "2e8444def562120f356b31979b077e7b058484d4"
+
+[[deps.TriSpinD]]
+path = "."
+uuid = "0c281575-ae0b-4e2e-8635-954d8b3b9517"
+version = "1.0.0-DEV"
