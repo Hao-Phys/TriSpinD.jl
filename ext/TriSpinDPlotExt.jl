@@ -36,7 +36,7 @@ end
 function TriSpinD.plot_Sz_expectations(Lx::Int, Ly::Int, Szs::Vector{Float64}; order::Int=1)
     with_theme(theme_latexfonts()) do
         fig = Figure()
-        ax = Axis(fig[1,1], title="Sᶻ Expectation Values", titlesize=30, aspect=DataAspect())
+        ax = Axis(fig[1,1], title=L"\langle S^z \rangle", titlesize=30, aspect=DataAspect())
         hidedecorations!(ax)
         hidexdecorations!(ax)
         hideydecorations!(ax)
