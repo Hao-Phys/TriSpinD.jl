@@ -7,15 +7,15 @@ function construct_mpo(tlm::TriangularLatticeModel, sites)
 
     for bond in bonds_1nn
         (; i, j) = bond
-        os += J₁, "Sx", i, "Sx", j
-        os += J₁, "Sy", i, "Sy", j
+        os += 0.5 * J₁, "S+", i, "S-", j
+        os += 0.5 * J₁, "S-", i, "S+", j
         os += J₁ * Δ, "Sz", i, "Sz", j
     end
 
     for bond in bonds_2nn
         (; i, j) = bond
-        os += J₂, "Sx", i, "Sx", j
-        os += J₂, "Sy", i, "Sy", j
+        os += 0.5 * J₂, "S+", i, "S-", j
+        os += 0.5 * J₂, "S-", i, "S+", j
         os += J₂ * Δ, "Sz", i, "Sz", j
     end
 
@@ -89,15 +89,13 @@ function dmrg_gs(tlm::TriangularLatticeModel, ψ0, sites; kwargs...)
 
     @show "Ground state energy per site: ", E_gs / Ns
 
-    Sxs = [expect(ψ_gs, "Sx"; sites=i) for i in 1:Ns]
-    @show "Sx expectation values: ", Sxs
-    println("Sx expectation values: ", Sxs)
-    Sys = [expect(ψ_gs, "Sy"; sites=i) for i in 1:Ns]
-    @show "Sy expectation values: ", Sys
-    Szs = [expect(ψ_gs, "Sz"; sites=i) for i in 1:Ns]
-    @show "Sz expectation values: ", Szs
-
     return ψ_gs, E_gs, sites, H_mpo
+end
+
+function Sz_expectations(ψ, sites)
+    Ns = length(sites)
+    Szs = [expect(ψ, "Sz"; sites=i) for i in 1:Ns]
+    return Szs
 end
 
 function correlation_function_aux(j, E_gs, ψ_gs, sites, H_mpo, dt, tf, α, β; tdvp_kwargs...)

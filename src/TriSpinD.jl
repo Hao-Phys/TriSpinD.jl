@@ -10,9 +10,14 @@ export TriangularLatticeModel, CorrelationData, IntensityData
 
 include("TriangularLattice.jl")
 
-export plot_triangular_cluster
+export plot_triangular_cluster, plot_Sz_expectations
+
 function plot_triangular_cluster(args...; kwarg...)
     _needs_glmakie(:plot_triangular_cluster)
+end
+
+function plot_Sz_expectations(args...; kwarg...)
+    _needs_glmakie(:plot_Sz_expectations)
 end
 
 _needs_glmakie(fname::Symbol) = error(string(
@@ -20,7 +25,7 @@ _needs_glmakie(fname::Symbol) = error(string(
 ))
 
 include("ITensorTools.jl")
-export construct_mpo, initialize_UUD, initialize_UUUD, dmrg_gs, correlation_function
+export construct_mpo, initialize_UUD, initialize_UUUD, dmrg_gs, correlation_function, Sz_expectations
 
 include("PostProcessing.jl")
 
