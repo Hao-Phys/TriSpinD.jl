@@ -10,7 +10,7 @@ export TriangularLatticeModel, CorrelationData, IntensityData
 
 include("TriangularLattice.jl")
 
-export plot_triangular_cluster, plot_Sz_expectations
+export plot_triangular_cluster, plot_Sz_expectations, plot_dssf_heatmap
 
 function plot_triangular_cluster(args...; kwarg...)
     _needs_glmakie(:plot_triangular_cluster)
@@ -18,6 +18,10 @@ end
 
 function plot_Sz_expectations(args...; kwarg...)
     _needs_glmakie(:plot_Sz_expectations)
+end
+
+function plot_dssf_heatmap(args...; kwarg...)
+    _needs_glmakie(:plot_dssf_heatmap)
 end
 
 _needs_glmakie(fname::Symbol) = error(string(

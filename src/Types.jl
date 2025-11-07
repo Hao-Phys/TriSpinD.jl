@@ -23,14 +23,16 @@ struct CorrelationData
     combiners :: Tuple{Vararg{Tuple{Int, Int}}}
     dt :: Float64
     tf :: Float64
-    L1 :: Int
-    L2 :: Int
+    Lx :: Int
+    Ly :: Int
 end
 
 struct IntensityData
-    intensities   :: Union{Array{Float64, 3}, Array{Float64, 4}}
+    intensities :: Array{Float64, 3}
+    Sxx :: Array{Float64, 3}
+    Szz :: Array{Float64, 3}
     energies_full :: Vector{Float64}
-    L1 :: Int
-    L2 :: Int
+    Lx :: Int
+    Ly :: Int
     measure :: Symbol
 end

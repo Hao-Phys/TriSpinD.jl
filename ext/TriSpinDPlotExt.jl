@@ -53,4 +53,46 @@ function TriSpinD.plot_Sz_expectations(Lx::Int, Ly::Int, Szs::Vector{Float64}; o
     end
 end
 
+function TriSpinD.plot_dssf_heatmap(intensity_data::IntensityData, cut_indices::AbstractVector{<:NTuple{2,Int}}; xlabel, xticks, energy_max::Float64)
+    (; intensities, Sxx, Szz, energies_full, Lx, Ly, measure) = intensity_data
+
+    all((x ≤ Lx && y ≤ Ly) for (x, y) in cut_indices) || error("Cut indices exceed lattice size.")
+    num_qs = length(cut_indices)
+    if measure == :sperp || measure == :trace
+        inten_cuts = zeros(length(cut_indices), length(energies_full))
+        for (i, (x, y)) in enumerate(cut_indices)
+            inten_cuts[i, :] = intensities[:, x, y]
+        end
+        with_theme(theme_latexfonts()) do
+            fig = Figure()
+            ax  = Axis(fig[1,1], title="DSSF-"*string(measure)*" Heatmap", xlabel=xlabel, ylabel=L"E/J", titlesize=30, xlabelsize=30, ylabelsize=30, xticks=xticks, xticklabelsize=25, yticklabelsize=25)
+            heatmap!(ax, 1:num_qs, energies_full, inten_cuts, colormap=:viridis)
+            xlims!(ax, 1, num_qs)
+            ylims!(ax, 0, energy_max)
+            fig
+        end
+    elseif measure == :component
+        inten_cuts_Sxx = zeros(length(cut_indices), length(energies_full))
+        inten_cuts_Szz = zeros(length(cut_indices), length(energies_full))
+        for (i, (x, y)) in enumerate(cut_indices)
+            inten_cuts_Sxx[i, :] = Sxx[:, x, y]
+            inten_cuts_Szz[i, :] = Szz[:, x, y]
+        end
+        with_theme(theme_latexfonts()) do
+            fig = Figure()
+            ax1 = Axis(fig[1,1], title="DSSF-Sxx+Syy", xlabel=xlabel, ylabel=L"E/J", titlesize=30, xlabelsize=30, ylabelsize=30, xticks=xticks, xticklabelsize=25, yticklabelsize=25)
+            heatmap!(ax1, 1:num_qs, energies_full, inten_cuts_Sxx, colormap=:viridis)
+            xlims!(ax1, 1, num_qs)
+            ylims!(ax1, 0, energy_max)
+            ax2 = Axis(fig[1,2], title="DSSF-Szz", xlabel=xlabel, ylabel=L"E/J", titlesize=30, xlabelsize=30, ylabelsize=30, xticks=xticks, xticklabelsize=25, yticklabelsize=25)
+            heatmap!(ax2, 1:num_qs, energies_full, inten_cuts_Szz, colormap=:viridis)
+            xlims!(ax2, 1, num_qs)
+            ylims!(ax2, 0, energy_max)
+            fig
+        end
+    else
+        error("Unsupported measure: $measure. Supported measures are :sperp, :trace, :component.")
+    end
+end
+
 end

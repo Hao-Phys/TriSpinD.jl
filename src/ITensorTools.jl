@@ -100,7 +100,7 @@ end
 
 function correlation_function_aux(j, E_gs, ψ_gs, sites, H_mpo, dt, tf, α, β; tdvp_kwargs...)
     Ns = length(sites)
-    spinops = ("Sx", "Sy", "Sz")
+    spinops = ("S+", "S-", "Sz")
     Siαs = [op(spinops[α], sites, i) for i in 1:Ns]
     Sjβ  = op(spinops[β], sites, j)
 
@@ -134,11 +134,15 @@ end
 """
     correlation_function(tlm::TriangularLatticeModel, dt, tf, combiners::NTuple{Tuple{Int, Int}}; kwargs...)
 
-Compute the time-dependent spin correlation functions ⟨Sᵅ(r, t) Sᵝ(r₀, 0)⟩ - ⟨Sᵅ(r)⟩⟨Sᵝ(r₀)⟩ for all sites r in the triangular lattice model `tlm`, where `r₀` is chosen to be the center site of sublattice A and B. Here The time evolution is performed up to time `tf` with time step `dt`. The spin component pairs (α, β) are specified in `combiners`, which is a tuple of tuples, e.g., `((1, 1), (2, 2), (3, 3))` for Sx-Sx, Sy-Sy, and Sz-Sz correlations.
+Compute the time-dependent spin correlation functions ⟨Sᵅ(r, t) Sᵝ(r₀, 0)⟩ - ⟨Sᵅ(r)⟩⟨Sᵝ(r₀)⟩ for all sites r in the triangular lattice model `tlm`, where `r₀` is chosen to be the center site of sublattice A and B. Here The time evolution is performed up to time `tf` with time step `dt`. The spin component pairs (α, β) are specified in `combiners`, which is a tuple of tuples, e.g., `((1, 2), (2, 1), (3, 3))` for S+ S-, S- S+, and Sz Sz correlations.
 
 Tips on the choice of `dt` and `tf`: Given a `max_energy` scale of interest, dt ~ (1/max_energy) * π; given a `energy_resolution` scale of interest, tf ~ (1/energy_resolution) * π.
 """
-function correlation_function(tlm::TriangularLatticeModel, ψ0, sites, dt, tf, r0s::Tuple{Vararg{Int}}, combiners::Tuple{Vararg{Tuple{Int, Int}}}, dmrg_kwargs::NamedTuple; tdvp_kwargs::NamedTuple=(;))
+function correlation_function(tlm::TriangularLatticeModel, ψ0, sites, dt, tf, r0s::Tuple{Vararg{Int}}, dmrg_kwargs::NamedTuple; tdvp_kwargs::NamedTuple=(;))
+    (; Lx, Ly) = tlm
+
+    combiners = ((1,2), (2,1), (3,3))
+
     ψ_gs, E_gs, sites, H_mpo = dmrg_gs(tlm, ψ0, sites; dmrg_kwargs...)
     @show "Maximum bond dimension in ground state MPS: " maxlinkdim(ψ_gs)
 
@@ -157,5 +161,5 @@ function correlation_function(tlm::TriangularLatticeModel, ψ0, sites, dt, tf, r
         correlations[:, :, combiner_index, r0_index] = corrs
     end
 
-    return CorrelationData(correlations, r0s, combiners, dt, tf, L1, L2)
+    return CorrelationData(correlations, r0s, combiners, dt, tf, Lx, Ly)
 end
