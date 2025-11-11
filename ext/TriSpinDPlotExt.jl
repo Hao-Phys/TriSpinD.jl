@@ -53,7 +53,7 @@ function TriSpinD.plot_Sz_expectations(Lx::Int, Ly::Int, Szs::Vector{Float64}; o
     end
 end
 
-function TriSpinD.plot_dssf_heatmap(intensity_data::IntensityData, cut_indices::AbstractVector{<:NTuple{2,Int}}; xlabel, xticks, energy_max::Float64)
+function TriSpinD.plot_dssf_heatmap(intensity_data::IntensityData, cut_indices::AbstractVector{<:NTuple{2,Int}}; xlabel, xticks, energy_min::Float64=0.0, energy_max::Float64=30.0)
     (; intensities, Sxx, Szz, energies_full, Lx, Ly, measure) = intensity_data
 
     all((x ≤ Lx && y ≤ Ly) for (x, y) in cut_indices) || error("Cut indices exceed lattice size.")
@@ -68,7 +68,7 @@ function TriSpinD.plot_dssf_heatmap(intensity_data::IntensityData, cut_indices::
             ax  = Axis(fig[1,1], title="DSSF-"*string(measure)*" Heatmap", xlabel=xlabel, ylabel=L"E/J", titlesize=30, xlabelsize=30, ylabelsize=30, xticks=xticks, xticklabelsize=25, yticklabelsize=25)
             heatmap!(ax, 1:num_qs, energies_full, inten_cuts, colormap=:viridis)
             xlims!(ax, 1, num_qs)
-            ylims!(ax, 0, energy_max)
+            ylims!(ax, energy_min, energy_max)
             fig
         end
     elseif measure == :component
@@ -81,13 +81,15 @@ function TriSpinD.plot_dssf_heatmap(intensity_data::IntensityData, cut_indices::
         with_theme(theme_latexfonts()) do
             fig = Figure()
             ax1 = Axis(fig[1,1], title="DSSF-Sxx+Syy", xlabel=xlabel, ylabel=L"E/J", titlesize=30, xlabelsize=30, ylabelsize=30, xticks=xticks, xticklabelsize=25, yticklabelsize=25)
-            heatmap!(ax1, 1:num_qs, energies_full, inten_cuts_Sxx, colormap=:viridis)
+            cm1 = heatmap!(ax1, 1:num_qs, energies_full, inten_cuts_Sxx, colormap=:viridis)
             xlims!(ax1, 1, num_qs)
             ylims!(ax1, 0, energy_max)
-            ax2 = Axis(fig[1,2], title="DSSF-Szz", xlabel=xlabel, ylabel=L"E/J", titlesize=30, xlabelsize=30, ylabelsize=30, xticks=xticks, xticklabelsize=25, yticklabelsize=25)
-            heatmap!(ax2, 1:num_qs, energies_full, inten_cuts_Szz, colormap=:viridis)
+            Colorbar(fig[1,2], cm1)
+            ax2 = Axis(fig[1,3], title="DSSF-Szz", xlabel=xlabel, ylabel=L"E/J", titlesize=30, xlabelsize=30, ylabelsize=30, xticks=xticks, xticklabelsize=25, yticklabelsize=25)
+            cm2 = heatmap!(ax2, 1:num_qs, energies_full, inten_cuts_Szz, colormap=:viridis)
             xlims!(ax2, 1, num_qs)
-            ylims!(ax2, 0, energy_max)
+            ylims!(ax2, energy_min, energy_max)
+            Colorbar(fig[1,4], cm2)
             fig
         end
     else
