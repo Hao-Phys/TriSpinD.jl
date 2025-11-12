@@ -29,7 +29,7 @@ _needs_glmakie(fname::Symbol) = error(string(
 ))
 
 include("ITensorTools.jl")
-export construct_mpo, initialize_UUD, initialize_UUUD, dmrg_gs, correlation_function, Sz_expectations
+export construct_mpo, initialize_UUD, initialize_UUUD, initialize_polarized, dmrg_gs, correlation_function, Sz_expectations
 
 include("PostProcessing.jl")
 

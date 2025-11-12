@@ -47,10 +47,17 @@ function dssf(corr_data::CorrelationData, σt, σr; measure::Symbol=:sperp, orde
         @. intensities += S_xx + S_zz
 
     elseif measure == :component
-        for r0_index in eachindex(r0s)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], dt, tf, Lx, Ly, σt, σr; order)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], dt, tf, Lx, Ly, σt, σr; order)
-            S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], dt, tf, Lx, Ly, σt, σr; order)
+        if length(combiners) == 2
+            for r0_index in eachindex(r0s)
+                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], dt, tf, Lx, Ly, σt, σr; order)
+                S_zz += smooth_and_fourier_corr(correlations[:, :, 2, r0_index], dt, tf, Lx, Ly, σt, σr; order)
+            end
+        elseif length(combiners) == 3
+            for r0_index in eachindex(r0s)
+                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], dt, tf, Lx, Ly, σt, σr; order)
+                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], dt, tf, Lx, Ly, σt, σr; order)
+                S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], dt, tf, Lx, Ly, σt, σr; order)
+            end
         end
     else
         error("Unsupported measure: $measure. Supported measures are :sperp, :trace, :component.")

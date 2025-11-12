@@ -20,7 +20,7 @@ function construct_mpo(tlm::TriangularLatticeModel, sites)
     end
 
     for i in 1:Ns
-        os += h, "Sz", i
+        os += -h, "Sz", i
     end
 
     H_mpo = MPO(os, sites)
@@ -73,6 +73,19 @@ function initialize_UUUD(tlm::TriangularLatticeModel)
         else
             ψ0[i] = ITensors.state(s, "Up")
         end
+    end
+
+    return ψ0, sites
+end
+
+function initialize_polarized(tlm::TriangularLatticeModel)
+    (; Lx, Ly, order) = tlm
+    Ns = Lx * Ly
+    sites = siteinds("S=1/2", Ns; conserve_qns=true)
+    ψ0 = MPS(sites)
+
+    for i in 1:Ns
+        ψ0[i] = ITensors.state(sites[i], "Up")
     end
 
     return ψ0, sites
@@ -138,16 +151,14 @@ Compute the time-dependent spin correlation functions ⟨Sᵅ(r, t) Sᵝ(r₀, 0
 
 Tips on the choice of `dt` and `tf`: Given a `max_energy` scale of interest, dt ~ (1/max_energy) * π; given a `energy_resolution` scale of interest, tf ~ (1/energy_resolution) * π.
 """
-function correlation_function(tlm::TriangularLatticeModel, ψ0, sites, dt, tf, r0s::Tuple{Vararg{Int}}, dmrg_kwargs::NamedTuple; tdvp_kwargs::NamedTuple=(;))
+function correlation_function(tlm::TriangularLatticeModel, ψ0, sites, dt, tf, r0s::Tuple{Vararg{Int}}, dmrg_kwargs::NamedTuple; tdvp_kwargs::NamedTuple=(;), combiners::Tuple{Vararg{Tuple{Int, Int}}}=((1,2), (2,1), (3,3)))
     (; Lx, Ly) = tlm
-
-    combiners = ((1,2), (2,1), (3,3))
 
     ψ_gs, E_gs, sites, H_mpo = dmrg_gs(tlm, ψ0, sites; dmrg_kwargs...)
     @show "Maximum bond dimension in ground state MPS: " maxlinkdim(ψ_gs)
 
     num_combiners = length(combiners)
-    iters = [(combiner_index, r0_index) for combiner_index in 1:num_combiners for r0_index in 1:2]
+    iters = [(combiner_index, r0_index) for combiner_index in 1:num_combiners for r0_index in eachindex(r0s)]
 
     Ns = length(sites)
     nt = Int(round(tf / dt)) + 1
