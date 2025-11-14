@@ -1,3 +1,10 @@
+function available_q_points(Lx::Int, Ly::Int)
+    e_x = 2π / Lx
+    e_y = 4π / (√3*Ly)
+    q_points = [[n*e_x, m*e_y] for n in 0:Lx-1, m in 0:Ly-1]
+    return q_points
+end
+
 function smooth_and_fourier_corr(corr::Matrix{ComplexF64}, dt, tf, Lx::Int, Ly::Int, σt, σr; order::Int=1)
     a₁ = [1, 0]
     a₂ = [-1/2, √3/2]

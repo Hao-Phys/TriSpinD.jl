@@ -1,7 +1,7 @@
 module TriSpinDPlotExt
 
 using TriSpinD
-import TriSpinD: siteindex, inverse_siteindex, triangular_lattice_bonds, cartesian_coordinates
+import TriSpinD: siteindex, inverse_siteindex, triangular_lattice_bonds, cartesian_coordinates, available_q_points
 using GLMakie
 
 function TriSpinD.plot_triangular_cluster(Lx::Int, Ly::Int; order::Int=1)
@@ -96,5 +96,32 @@ function TriSpinD.plot_dssf_heatmap(intensity_data::IntensityData, cut_indices::
         error("Unsupported measure: $measure. Supported measures are :sperp, :trace, :component.")
     end
 end
+
+function TriSpinD.plot_available_q_points(Lx::Int, Ly::Int)
+    b₁ = 2π * [1, 1/√3]
+    b₂ = 2π * [0, 2/√3]
+
+    BZ_vertices = [2b₁/3-b₂/3, b₁/3+b₂/3, -b₁/3+2b₂/3, -2b₁/3+b₂/3, -b₁/3-b₂/3, b₁/3-2b₂/3, 2b₁/3-b₂/3]
+
+    q_points = available_q_points(Lx, Ly)
+    with_theme(theme_latexfonts()) do
+        fig = Figure()
+        ax = Axis(fig[1,1], title="Available q-points", xlabel=L"q_x", ylabel=L"q_y", titlesize=30, xlabelsize=30, ylabelsize=30, aspect=DataAspect())
+        for (iq, q) in enumerate(q_points)
+            scatter!(ax, q[1], q[2], markersize=10, color=:blue)
+            text!(ax, q[1]+0.1, q[2]+0.02; text="$(iq)", color=:black, fontsize=20)
+        end
+        lines!(ax, [v[1] for v in BZ_vertices], [v[2] for v in BZ_vertices], color=:black)
+        text!(ax, 0, 0; text=L"\Gamma", color=:purple, fontsize=20, align=(:right, :top))
+        text!(ax, 4π/3, 0; text=L"K", color=:purple, fontsize=20, align=(:left, :top))
+        text!(ax, 2π/3, 2π/√3; text=L"K", color=:purple, fontsize=20, align=(:right, :top))
+        text!(ax, π, π/√3; text=L"M", color=:purple, fontsize=20, align=(:right, :top))
+        text!(ax, 0, 2π/√3; text=L"M", color=:purple, fontsize=20, align=(:right, :top))
+        xlims!(ax, -2π, 2π)
+        ylims!(ax, -2π/√3-0.6, 2π/√3+0.6)
+        fig
+    end
+end
+
 
 end
