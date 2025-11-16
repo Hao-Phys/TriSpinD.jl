@@ -53,15 +53,16 @@ function TriSpinD.plot_Sz_expectations(Lx::Int, Ly::Int, Szs::Vector{Float64}; o
     end
 end
 
-function TriSpinD.plot_dssf_heatmap(intensity_data::IntensityData, cut_indices::AbstractVector{<:NTuple{2,Int}}; xlabel, xticks, energy_min::Float64=0.0, energy_max::Float64=30.0)
-    (; intensities, Sxx, Szz, energies_full, Lx, Ly, measure) = intensity_data
+function TriSpinD.plot_dssf_heatmap(intensity_data::IntensityData, q_indices::AbstractVector{Int}; xlabel, xticks, energy_min::Float64=0.0, energy_max::Float64=30.0)
+    (; intensities, Sxx, Szz, q_points, energies_full, Lx, Ly, measure) = intensity_data
 
-    all((x ≤ Lx && y ≤ Ly) for (x, y) in cut_indices) || error("Cut indices exceed lattice size.")
-    num_qs = length(cut_indices)
+    Nsites = Lx * Ly
+    all(1 ≤ x ≤ Nsites for x in q_indices) || error("q_indices must be between 1 and $Nsites.")
+    num_qs = length(q_indices)
     if measure == :sperp || measure == :trace
-        inten_cuts = zeros(length(cut_indices), length(energies_full))
-        for (i, (x, y)) in enumerate(cut_indices)
-            inten_cuts[i, :] = intensities[:, x, y]
+        inten_cuts = zeros(length(q_indices), length(energies_full))
+        for (i, q_index) in enumerate(q_indices)
+            inten_cuts[i, :] = intensities[:, q_index]
         end
         with_theme(theme_latexfonts()) do
             fig = Figure()
@@ -72,11 +73,11 @@ function TriSpinD.plot_dssf_heatmap(intensity_data::IntensityData, cut_indices::
             fig
         end
     elseif measure == :component
-        inten_cuts_Sxx = zeros(length(cut_indices), length(energies_full))
-        inten_cuts_Szz = zeros(length(cut_indices), length(energies_full))
-        for (i, (x, y)) in enumerate(cut_indices)
-            inten_cuts_Sxx[i, :] = Sxx[:, x, y]
-            inten_cuts_Szz[i, :] = Szz[:, x, y]
+        inten_cuts_Sxx = zeros(length(q_indices), length(energies_full))
+        inten_cuts_Szz = zeros(length(q_indices), length(energies_full))
+        for (i, q_index) in enumerate(q_indices)
+            inten_cuts_Sxx[i, :] = Sxx[:, q_index]
+            inten_cuts_Szz[i, :] = Szz[:, q_index]
         end
         with_theme(theme_latexfonts()) do
             fig = Figure()

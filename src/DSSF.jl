@@ -9,29 +9,28 @@ function dssf(corr_data::CorrelationData, σt, σr; measure::Symbol=:sperp, orde
     ts_full = [reverse(-ts[2:end]); ts]
     energies_full = fftshift(fftfreq(length(ts_full))) * 2π / dt
 
-    intensities = zeros(Float64, length(energies_full), Lx, Ly)
-    S_xx = zeros(Float64, length(energies_full), Lx, Ly)
-    S_zz = zeros(Float64, length(energies_full), Lx, Ly)
+    Nsites = Lx * Ly
+    intensities = zeros(Float64, length(energies_full), Nsites)
+    S_xx = zeros(Float64, length(energies_full), Nsites)
+    S_zz = zeros(Float64, length(energies_full), Nsites)
+
+    q_points = available_q_points(Lx, Ly)
 
     if measure == :sperp
-        b₁ = 2π * [1, 1/√3]
-        b₂ = 2π * [0, 2/√3]
-
         @assert (1,2) in combiners && (2,1) in combiners && (3,3) in combiners "For :sperp measure, combiners must include (1,2), (2,1), (3,3)"
 
         for r0_index in eachindex(r0s)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], dt, tf, Lx, Ly, σt, σr; order)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], dt, tf, Lx, Ly, σt, σr; order)
-            S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], dt, tf, Lx, Ly, σt, σr; order)
+            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
+            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
+            S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
         end
 
-        for iqx in 1:Lx, iqy in 1:Ly
-            q = (iqx - 1) * b₁ / Lx + (iqy - 1) * b₂ / Ly
-            q_norm = norm(q)
+        for (iq, q_point) in enumerate(q_points)
+            q_norm = norm(q_point)
             if q_norm ≈ 0
-                intensities[:, iqx, iqy] += S_xx[:, iqx, iqy] + S_zz[:, iqx, iqy]
+                intensities[:, iq] += S_xx[:, iq] + S_zz[:, iq]
             else
-                intensities[:, iqx, iqy] += (2-q[1]^2/q_norm^2-q[2]^2/q_norm^2) * S_xx[:, iqx, iqy] + S_zz[:, iqx, iqy]
+                intensities[:, iq] += (2-q_point[1]^2/q_norm^2-q_point[2]^2/q_norm^2) * S_xx[:, iq] + S_zz[:, iq]
             end
         end
 
@@ -39,9 +38,9 @@ function dssf(corr_data::CorrelationData, σt, σr; measure::Symbol=:sperp, orde
         @assert (1,2) in combiners && (2,1) in combiners && (3,3) in combiners "For :trace measure, combiners must include (1,2), (2,1), and (3,3)."
 
         for r0_index in eachindex(r0s)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], dt, tf, Lx, Ly, σt, σr; order)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], dt, tf, Lx, Ly, σt, σr; order)
-            S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], dt, tf, Lx, Ly, σt, σr; order)
+            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
+            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
+            S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
         end
 
         @. intensities += S_xx + S_zz
@@ -49,19 +48,19 @@ function dssf(corr_data::CorrelationData, σt, σr; measure::Symbol=:sperp, orde
     elseif measure == :component
         if length(combiners) == 2
             for r0_index in eachindex(r0s)
-                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], dt, tf, Lx, Ly, σt, σr; order)
-                S_zz += smooth_and_fourier_corr(correlations[:, :, 2, r0_index], dt, tf, Lx, Ly, σt, σr; order)
+                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
+                S_zz += smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
             end
         elseif length(combiners) == 3
             for r0_index in eachindex(r0s)
-                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], dt, tf, Lx, Ly, σt, σr; order)
-                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], dt, tf, Lx, Ly, σt, σr; order)
-                S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], dt, tf, Lx, Ly, σt, σr; order)
+                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
+                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
+                S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
             end
         end
     else
         error("Unsupported measure: $measure. Supported measures are :sperp, :trace, :component.")
     end
 
-    return IntensityData(intensities, S_xx, S_zz, energies_full, Lx, Ly, measure)
+    return IntensityData(intensities, S_xx, S_zz, q_points, energies_full, Lx, Ly, measure)
 end

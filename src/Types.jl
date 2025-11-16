@@ -28,9 +28,10 @@ struct CorrelationData
 end
 
 struct IntensityData
-    intensities :: Array{Float64, 3}
-    Sxx :: Array{Float64, 3}
-    Szz :: Array{Float64, 3}
+    intensities :: Array{Float64, 2}
+    Sxx :: Array{Float64, 2}
+    Szz :: Array{Float64, 2}
+    q_points :: Matrix{Vector{Float64}}
     energies_full :: Vector{Float64}
     Lx :: Int
     Ly :: Int
