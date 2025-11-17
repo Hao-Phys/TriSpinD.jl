@@ -1,7 +1,7 @@
 function available_q_points(Lx::Int, Ly::Int)
-    e_x = 2π / Lx
-    e_y = 4π / (√3 * Ly)
-    q_points = [[n*e_x, m*e_y] for n in 0:Lx-1, m in 0:Ly-1]
+    ex = 2π / Lx
+    ey = 4π / (√3*Ly)
+    q_points = [[ex*n, ey*m] for n in 0:Lx-1, m in 0:Ly-1]
     return q_points
 end
 

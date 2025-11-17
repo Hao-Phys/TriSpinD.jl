@@ -109,8 +109,9 @@ function TriSpinD.plot_available_q_points(Lx::Int, Ly::Int)
         fig = Figure()
         ax = Axis(fig[1,1], title="Available q-points", xlabel=L"q_x", ylabel=L"q_y", titlesize=30, xlabelsize=30, ylabelsize=30, aspect=DataAspect())
         for (iq, q) in enumerate(q_points)
-            scatter!(ax, q[1], q[2], markersize=10, color=:blue)
-            text!(ax, q[1]+0.1, q[2]+0.02; text="$(iq)", color=:black, fontsize=20)
+            qx, qy = q
+            scatter!(ax, qx, qy, markersize=10, color=:blue)
+            text!(ax, qx+0.1, qy+0.02; text="$(iq)", color=:black, fontsize=20)
         end
         lines!(ax, [v[1] for v in BZ_vertices], [v[2] for v in BZ_vertices], color=:black)
         text!(ax, 0, 0; text=L"\Gamma", color=:purple, fontsize=20, align=(:right, :top))
