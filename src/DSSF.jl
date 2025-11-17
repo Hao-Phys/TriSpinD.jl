@@ -2,7 +2,7 @@
     dssf(corr_data::CorrelationData, σt, σr; measure::Symbol=:sperp, order::Int=1)
 Compute the dynamical structure factor from time-dependent correlation data. The time smoothing parameter is `σt`, and the spatial smoothing parameter is `σr`. The `measure` argument specifies the type of intensity measure to compute, which can be `:sperp`, `:trace`, or `:component`.
 """
-function dssf(corr_data::CorrelationData, σt, σr; measure::Symbol=:sperp, order::Int=1)
+function dssf(corr_data::CorrelationData, σt; measure::Symbol=:sperp, order::Int=1)
     (; r0s, correlations, combiners, dt, tf, Lx, Ly) = corr_data
 
     ts = collect(0:dt:tf)
@@ -20,9 +20,9 @@ function dssf(corr_data::CorrelationData, σt, σr; measure::Symbol=:sperp, orde
         @assert (1,2) in combiners && (2,1) in combiners && (3,3) in combiners "For :sperp measure, combiners must include (1,2), (2,1), (3,3)"
 
         for r0_index in eachindex(r0s)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
-            S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
+            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
+            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
+            S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
         end
 
         for (iq, q_point) in enumerate(q_points)
@@ -38,9 +38,9 @@ function dssf(corr_data::CorrelationData, σt, σr; measure::Symbol=:sperp, orde
         @assert (1,2) in combiners && (2,1) in combiners && (3,3) in combiners "For :trace measure, combiners must include (1,2), (2,1), and (3,3)."
 
         for r0_index in eachindex(r0s)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
-            S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
+            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
+            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
+            S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
         end
 
         @. intensities += S_xx + S_zz
@@ -48,14 +48,14 @@ function dssf(corr_data::CorrelationData, σt, σr; measure::Symbol=:sperp, orde
     elseif measure == :component
         if length(combiners) == 2
             for r0_index in eachindex(r0s)
-                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
-                S_zz += smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
+                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
+                S_zz += smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
             end
         elseif length(combiners) == 3
             for r0_index in eachindex(r0s)
-                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
-                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
-                S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt, σr; order)
+                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
+                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
+                S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
             end
         end
     else

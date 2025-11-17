@@ -5,8 +5,7 @@ function available_q_points(Lx::Int, Ly::Int)
     return q_points
 end
 
-function smooth_and_fourier_corr(corr::Matrix{ComplexF64}, site0::Int, Lx::Int, Ly::Int, dt, tf, σt, σr; order::Int=1)
-    e_y = 4π / (√3 * Ly)
+function smooth_and_fourier_corr(corr::Matrix{ComplexF64}, site0::Int, Lx::Int, Ly::Int, dt, tf, σt; order::Int=1)
     Ns = Lx * Ly
     corr_full = [reverse(conj(corr[2:end, :]), dims=1); corr]
     x0, y0 = inverse_siteindex(Lx, Ly, site0; order=order)
@@ -24,13 +23,6 @@ function smooth_and_fourier_corr(corr::Matrix{ComplexF64}, site0::Int, Lx::Int, 
     # Smooth in time
     for (it, t) in enumerate(ts_full)
         corr_full[it, :] *= exp(-σt * t^2)
-    end
-
-    # Smooth along the cylindrical direction
-    for site in axes(corr_full, 2)
-        x, y = inverse_siteindex(Lx, Ly, site; order=order)
-        _, ry = cartesian_coordinates(x, y)
-        corr_full[:, site] *= exp(-σr * ((ry-ry0)*e_y)^2)
     end
 
     # Fourier transform along the spatial directions
