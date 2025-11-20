@@ -17,7 +17,7 @@ function smooth_and_fourier_corr(corr::Matrix{ComplexF64}, site0::Int, Lx::Int, 
         rs[site] = cartesian_coordinates(x, y)
     end
 
-    ts = collect(0:dt:tf)
+    ts = range(0, tf; length=Int(round(tf / dt)) + 1)
     ts_full = [reverse(-ts[2:end]); ts]
 
     # Smooth in time

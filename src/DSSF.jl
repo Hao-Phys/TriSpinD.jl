@@ -5,7 +5,7 @@ Compute the dynamical structure factor from time-dependent correlation data. The
 function dssf(corr_data::CorrelationData, σt, measure::Symbol; order::Int=1)
     (; r0s, correlations, dt, tf, Lx, Ly) = corr_data
 
-    ts = collect(0:dt:tf)
+    ts = range(0, tf; length=Int(round(tf / dt)) + 1)
     ts_full = [reverse(-ts[2:end]); ts]
     energies_full = fftshift(fftfreq(length(ts_full))) * 2π / dt
 
