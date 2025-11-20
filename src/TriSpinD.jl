@@ -38,6 +38,6 @@ export construct_mpo, initialize_UUD, initialize_UUUD, initialize_polarized, dmr
 include("FourierTransforms.jl")
 
 include("DSSF.jl")
-export dssf
+export dssf, intensities_Sxx, intensities
 
 end

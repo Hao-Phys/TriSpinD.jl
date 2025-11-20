@@ -53,52 +53,30 @@ function TriSpinD.plot_Sz_expectations(Lx::Int, Ly::Int, Szs::Vector{Float64}; o
     end
 end
 
-function TriSpinD.plot_dssf_heatmap(intensity_data::IntensityData, q_indices::AbstractVector{Int}; xlabel, xticks, energy_min=0.0, energy_max=30.0, energy_min_zz=0.0, energy_max_zz=30.0, colorrange=nothing, colorrange_zz=nothing, colormap=:viridis)
-    (; intensities, Sxx, Szz, energies_full, Lx, Ly, measure) = intensity_data
+function TriSpinD.plot_dssf_heatmap(intensity_data::IntensityData, q_indices::AbstractVector{Int}; xlabel, xticks, energy_min=0.0, energy_max=30.0, colorrange=nothing, colormap=:viridis)
+    (; intensities, energies_full, Lx, Ly, measure) = intensity_data
 
     Nsites = Lx * Ly
     all(1 ≤ x ≤ Nsites for x in q_indices) || error("q_indices must be between 1 and $Nsites.")
     num_qs = length(q_indices)
-    if measure == :sperp || measure == :trace
-        inten_cuts = zeros(length(q_indices), length(energies_full))
-        for (i, q_index) in enumerate(q_indices)
-            inten_cuts[i, :] = intensities[:, q_index]
-        end
-        isnothing(colorrange) && (colorrange = (0.0, maximum(inten_cuts)))
-        with_theme(theme_latexfonts()) do
-            fig = Figure()
-            ax  = Axis(fig[1,1], title="DSSF-"*string(measure)*" Heatmap", xlabel=xlabel, ylabel=L"E/J", titlesize=30, xlabelsize=30, ylabelsize=30, xticks=xticks, xticklabelsize=25, yticklabelsize=25)
-            heatmap!(ax, 1:num_qs, energies_full, inten_cuts, colormap=colormap, colorrange=colorrange)
-            xlims!(ax, 1, num_qs)
-            ylims!(ax, energy_min, energy_max)
-            fig
-        end
-    elseif measure == :component
-        inten_cuts_Sxx = zeros(length(q_indices), length(energies_full))
-        inten_cuts_Szz = zeros(length(q_indices), length(energies_full))
-        for (i, q_index) in enumerate(q_indices)
-            inten_cuts_Sxx[i, :] = Sxx[:, q_index]
-            inten_cuts_Szz[i, :] = Szz[:, q_index]
-        end
-        isnothing(colorrange) && (colorrange = (0.0, maximum(inten_cuts_Sxx)))
-        isnothing(colorrange_zz) && (colorrange_zz = (0.0, maximum(inten_cuts_Szz)))
-        with_theme(theme_latexfonts()) do
-            fig = Figure()
-            ax1 = Axis(fig[1,1], title="DSSF-Sxx+Syy", xlabel=xlabel, ylabel=L"E/J", titlesize=30, xlabelsize=30, ylabelsize=30, xticks=xticks, xticklabelsize=25, yticklabelsize=25)
-            cm1 = heatmap!(ax1, 1:num_qs, energies_full, inten_cuts_Sxx, colormap=colormap, colorrange=colorrange)
-            xlims!(ax1, 1, num_qs)
-            ylims!(ax1, energy_min, energy_max)
-            Colorbar(fig[1,2], cm1)
-            ax2 = Axis(fig[1,3], title="DSSF-Szz", xlabel=xlabel, ylabel=L"E/J", titlesize=30, xlabelsize=30, ylabelsize=30, xticks=xticks, xticklabelsize=25, yticklabelsize=25)
-            cm2 = heatmap!(ax2, 1:num_qs, energies_full, inten_cuts_Szz, colormap=colormap, colorrange=colorrange_zz)
-            xlims!(ax2, 1, num_qs)
-            ylims!(ax2, energy_min_zz, energy_max_zz)
-            Colorbar(fig[1,4], cm2)
-            fig
-        end
-    else
-        error("Unsupported measure: $measure. Supported measures are :sperp, :trace, :component.")
+    inten_cuts = zeros(length(q_indices), length(energies_full))
+    for (i, q_index) in enumerate(q_indices)
+        inten_cuts[i, :] = intensities[:, q_index]
     end
+    isnothing(colorrange) && (colorrange = (0.0, maximum(inten_cuts)))
+
+    title_str = "DSSF-" * string(measure) * " Heatmap"
+
+    with_theme(theme_latexfonts()) do
+        fig = Figure()
+        ax  = Axis(fig[1,1], title=title_str, xlabel=xlabel, ylabel=L"E/J", titlesize=30, xlabelsize=30, ylabelsize=30, xticks=xticks, xticklabelsize=25, yticklabelsize=25)
+        cm = heatmap!(ax, 1:num_qs, energies_full, inten_cuts, colormap=colormap, colorrange=colorrange)
+        xlims!(ax, 1, num_qs)
+        ylims!(ax, energy_min, energy_max)
+        Colorbar(fig[1,2], cm)
+        fig
+    end
+
 end
 
 function TriSpinD.plot_available_q_points(Lx::Int, Ly::Int)

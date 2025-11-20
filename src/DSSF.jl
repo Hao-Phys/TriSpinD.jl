@@ -2,8 +2,8 @@
     dssf(corr_data::CorrelationData, σt, σr; measure::Symbol=:sperp, order::Int=1)
 Compute the dynamical structure factor from time-dependent correlation data. The time smoothing parameter is `σt`, and the spatial smoothing parameter is `σr`. The `measure` argument specifies the type of intensity measure to compute, which can be `:sperp`, `:trace`, or `:component`.
 """
-function dssf(corr_data::CorrelationData, σt; measure::Symbol=:sperp, order::Int=1)
-    (; r0s, correlations, combiners, dt, tf, Lx, Ly) = corr_data
+function dssf(corr_data::CorrelationData, σt, measure::Symbol; order::Int=1)
+    (; r0s, correlations, dt, tf, Lx, Ly) = corr_data
 
     ts = collect(0:dt:tf)
     ts_full = [reverse(-ts[2:end]); ts]
@@ -11,56 +11,74 @@ function dssf(corr_data::CorrelationData, σt; measure::Symbol=:sperp, order::In
 
     Nsites = Lx * Ly
     intensities = zeros(Float64, length(energies_full), Nsites)
-    S_xx = zeros(Float64, length(energies_full), Nsites)
-    S_zz = zeros(Float64, length(energies_full), Nsites)
 
     q_points = available_q_points(Lx, Ly)
 
+    for r0_index in eachindex(r0s)
+        intensities += smooth_and_fourier_corr(correlations[:, :, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
+    end
+
+    return IntensityData(intensities, q_points, energies_full, Lx, Ly, measure)
+end
+
+function intensities_Sxx(Spm::IntensityData)
+    (; q_points, energies_full, Lx, Ly, intensities) = Spm
+    Sxx_intensities = 0.25 * intensities
+    return IntensityData(Sxx_intensities, q_points, energies_full, Lx, Ly, :Sxx)
+end
+
+function intensities_Sxx(Spm::IntensityData, Smp::IntensityData)
+    Spm_intensities = Spm.intensities
+    Smp_intensities = Smp.intensities
+    (; q_points, energies_full, Lx, Ly) = Spm
+    Sxx_intensities = 0.25 * (Spm_intensities + Smp_intensities)
+    return IntensityData(Sxx_intensities, q_points, energies_full, Lx, Ly, :Sxx)
+end
+
+function intensities(Spm::IntensityData, Szz::IntensityData, measure::Symbol)
+    @assert measure in (:sperp, :trace) "Unsupported measure: $measure. Supported measures are :sperp, :trace"
+    Sxx_intensities = intensities_Sxx(Spm).intensities
+    Szz_intensities = Szz.intensities
+
+    (; q_points, energies_full, Lx, Ly) = Spm
     if measure == :sperp
-        @assert (1,2) in combiners && (2,1) in combiners && (3,3) in combiners "For :sperp measure, combiners must include (1,2), (2,1), (3,3)"
-
-        for r0_index in eachindex(r0s)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
-            S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
-        end
-
+        Nsites = Lx * Ly
+        intensities = zeros(Float64, length(energies_full), Nsites)
         for (iq, q_point) in enumerate(q_points)
             q_norm = norm(q_point)
             if q_norm ≈ 0
-                intensities[:, iq] += S_xx[:, iq] + S_zz[:, iq]
+                intensities[:, iq] += Sxx_intensities[:, iq] + Szz_intensities[:, iq]
             else
-                intensities[:, iq] += (2-q_point[1]^2/q_norm^2-q_point[2]^2/q_norm^2) * S_xx[:, iq] + S_zz[:, iq]
+                intensities[:, iq] += (2 - q_point[1]^2/q_norm^2 - q_point[2]^2/q_norm^2) * Sxx_intensities[:, iq] + Szz_intensities[:, iq]
             end
         end
-
+        return IntensityData(intensities, q_points, energies_full, Lx, Ly, measure)
     elseif measure == :trace
-        @assert (1,2) in combiners && (2,1) in combiners && (3,3) in combiners "For :trace measure, combiners must include (1,2), (2,1), and (3,3)."
-
-        for r0_index in eachindex(r0s)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
-            S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
-            S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
-        end
-
-        @. intensities += S_xx + S_zz
-
-    elseif measure == :component
-        if length(combiners) == 2
-            for r0_index in eachindex(r0s)
-                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
-                S_zz += smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
-            end
-        elseif length(combiners) == 3
-            for r0_index in eachindex(r0s)
-                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 1, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
-                S_xx += 0.25 * smooth_and_fourier_corr(correlations[:, :, 2, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
-                S_zz += smooth_and_fourier_corr(correlations[:, :, 3, r0_index], r0s[r0_index], Lx, Ly, dt, tf, σt; order)
-            end
-        end
-    else
-        error("Unsupported measure: $measure. Supported measures are :sperp, :trace, :component.")
+        intensities = Sxx_intensities + Szz_intensities
+        return IntensityData(intensities, q_points, energies_full, Lx, Ly, measure)
     end
+end
 
-    return IntensityData(intensities, S_xx, S_zz, q_points, energies_full, Lx, Ly, measure)
+function intensities(Spm::IntensityData, Smp::IntensityData, Szz::IntensityData, measure::Symbol)
+    @assert measure in (:sperp, :trace) "Unsupported measure: $measure. Supported measures are :sperp, :trace"
+    Sxx_intensities = intensities_Sxx(Spm, Smp).intensities
+    Szz_intensities = Szz.intensities
+
+    (; q_points, energies_full, Lx, Ly) = Spm
+    if measure == :sperp
+        Nsites = Lx * Ly
+        intensities = zeros(Float64, length(energies_full), Nsites)
+        for (iq, q_point) in enumerate(q_points)
+            q_norm = norm(q_point)
+            if q_norm ≈ 0
+                intensities[:, iq] += Sxx_intensities[:, iq] + Szz_intensities[:, iq]
+            else
+                intensities[:, iq] += (2 - q_point[1]^2/q_norm^2 - q_point[2]^2/q_norm^2) * Sxx_intensities[:, iq] + Szz_intensities[:, iq]
+            end
+        end
+        return IntensityData(intensities, q_points, energies_full, Lx, Ly, measure)
+    elseif measure == :trace
+        intensities = Sxx_intensities + Szz_intensities
+        return IntensityData(intensities, q_points, energies_full, Lx, Ly, measure)
+    end
 end

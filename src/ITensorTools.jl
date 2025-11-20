@@ -145,32 +145,31 @@ function correlation_function_aux(j, E_gs, ψ_gs, sites, H_mpo, dt, tf, α, β; 
 end
 
 """
-    correlation_function(tlm::TriangularLatticeModel, dt, tf, combiners::NTuple{Tuple{Int, Int}}; kwargs...)
+    correlation_function(tlm::TriangularLatticeModel, ψ0, sites, dt, tf, r0s::Tuple{Vararg{Int}}, combiner::Tuple{Int, Int}, dmrg_kwargs::NamedTuple; tdvp_kwargs::NamedTuple=(;))
 
-Compute the time-dependent spin correlation functions ⟨Sᵅ(r, t) Sᵝ(r₀, 0)⟩ - ⟨Sᵅ(r)⟩⟨Sᵝ(r₀)⟩ for all sites r in the triangular lattice model `tlm`, where `r₀` is chosen to be the center site of sublattice A and B. Here The time evolution is performed up to time `tf` with time step `dt`. The spin component pairs (α, β) are specified in `combiners`, which is a tuple of tuples, e.g., `((1, 2), (2, 1), (3, 3))` for S+ S-, S- S+, and Sz Sz correlations.
+Compute connected time-dependent spin correlations ⟨Sᵅ(r, t) Sᵝ(r₀, 0)⟩ - ⟨Sᵅ(r)⟩⟨Sᵝ(r₀)⟩ for every lattice site `r` relative to each reference site in `r0s`. The ground state is obtained via `dmrg_gs`, using `ψ0` and `sites` as the initial MPS and site set, and the excited state is evolved by TDVP from `t = 0` to `tf` in steps of `dt`. The pair `combiner = (α, β)` selects the spin operators `("S+", "S-", "Sz")[α]` and `("S+", "S-", "Sz")[β]`. Extra keyword arguments are forwarded to `dmrg` through `dmrg_kwargs` and to the TDVP evolution through `tdvp_kwargs`. The result is returned as a `CorrelationData` object storing an `nt × Ns × length(r0s)` array together with the lattice metadata.
 
-Tips on the choice of `dt` and `tf`: Given a `max_energy` scale of interest, dt ~ (1/max_energy) * π; given a `energy_resolution` scale of interest, tf ~ (1/energy_resolution) * π.
+Tips on the choice of `dt` and `tf`: Given a `max_energy` scale of interest, dt ≈ π / max_energy; given an `energy_resolution` scale of interest, tf ≈ π / energy_resolution.
 """
-function correlation_function(tlm::TriangularLatticeModel, ψ0, sites, dt, tf, r0s::Tuple{Vararg{Int}}, dmrg_kwargs::NamedTuple; tdvp_kwargs::NamedTuple=(;), combiners::Tuple{Vararg{Tuple{Int, Int}}}=((1,2), (2,1), (3,3)))
+function correlation_function(tlm::TriangularLatticeModel, ψ0, sites, dt, tf, r0s::Tuple{Vararg{Int}}, combiner::Tuple{Int, Int}, dmrg_kwargs::NamedTuple; tdvp_kwargs::NamedTuple=(;))
+    @assert all(1 ≤ r0 ≤ length(sites) for r0 in r0s) "All reference sites in r0s must be between 1 and $(length(sites))."
+    @assert combiner in ((1,2), (2,1), (3,3)) "Combiner must be one of (1,2), (2,1), or (3,3)."
+
     (; Lx, Ly) = tlm
 
     ψ_gs, E_gs, sites, H_mpo = dmrg_gs(tlm, ψ0, sites; dmrg_kwargs...)
     @show "Maximum bond dimension in ground state MPS: " maxlinkdim(ψ_gs)
 
-    num_combiners = length(combiners)
-    iters = [(combiner_index, r0_index) for combiner_index in 1:num_combiners for r0_index in eachindex(r0s)]
-
     Ns = length(sites)
     nt = Int(round(tf / dt)) + 1
-    correlations = zeros(ComplexF64, nt, Ns, length(combiners), length(r0s))
+    correlations = zeros(ComplexF64, nt, Ns, length(r0s))
 
-    Threads.@threads for i in eachindex(iters)
-        combiner_index, r0_index = iters[i]
-        α, β = combiners[combiner_index]
+    Threads.@threads for r0_index in eachindex(r0s)
+        α, β = combiner
         r0 = r0s[r0_index]
         corrs = correlation_function_aux(r0, E_gs, ψ_gs, sites, H_mpo, dt, tf, α, β; tdvp_kwargs...)
-        correlations[:, :, combiner_index, r0_index] = corrs
+        correlations[:, :, r0_index] = corrs
     end
 
-    return CorrelationData(correlations, r0s, combiners, dt, tf, Lx, Ly)
+    return CorrelationData(correlations, r0s, combiner, dt, tf, Lx, Ly)
 end
