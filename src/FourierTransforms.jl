@@ -33,7 +33,7 @@ function smooth_and_fourier_corr(corr::Matrix{ComplexF64}, site0::Int, Lx::Int, 
         for site in 1:Ns
             rx, ry = rs[site]
             phase = exp(-1im * (qx*(rx - rx0) + qy*(ry - ry0)))
-            corr_qt[:, iq] += corr_full[:, site] * phase
+            corr_qt[:, iq] += corr_full[:, site] * phase / Ns
         end
     end
     corr_qω = ifft(corr_qt, 1) * length(ts_full)
