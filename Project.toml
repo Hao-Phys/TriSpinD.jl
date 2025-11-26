@@ -17,6 +17,7 @@ TriSpinDPlotExt = "GLMakie"
 
 [compat]
 FFTW = "1.10.0"
+GLMakie = "0.13"
 ITensorMPS = "0.3.23"
 ITensors = "0.9.14"
 LinearAlgebra = "1.12.0"
